@@ -1,0 +1,15 @@
+numpy
+pandas
+opencv-python
+opencv-python-headless
+matplotlib
+tqdm
+openpyxl
+scikit-learn
+
+torch
+torchvision
+torchaudio
+
+einops
+transformers
