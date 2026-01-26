@@ -19,11 +19,6 @@ def show_candidate_frames(frame_dir, accident_frame, window=10):
 
     idx = min(max(accident_frame, start), end - 1)
 
-    print("\nFrame Viewer Controls:")
-    print("Right Arrow / d  -> Next frame")
-    print("Left Arrow  / a  -> Previous frame")
-    print("ESC             -> Exit viewer")
-
     while True:
         img = cv2.imread(os.path.join(frame_dir, frame_files[idx]))
         if img is None:
@@ -33,16 +28,18 @@ def show_candidate_frames(frame_dir, accident_frame, window=10):
         display = img.copy()
         cv2.putText(display, f"Frame {idx}", (20, 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(display, f"Predicted Accident Frame: {accident_frame}", (20, 650),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         cv2.imshow("Check Accident Frame", display)
         key = cv2.waitKey(0)
 
-        if key == 27:  # ESC
+        if key == 27 or key == ord('q'):  # ESC
             break
         elif key == 81 or key == ord('a'):  # Left
-            idx = max(start, idx - 1)
+            idx = max(0, idx - 1)
         elif key == 83 or key == ord('d'):  # Right
-            idx = min(end - 1, idx + 1)
+            idx = min(49, idx + 1)
 
     cv2.destroyAllWindows()
 
@@ -63,10 +60,10 @@ def plot_motion_curve(motion_scores):
 # Verification (Human-in-the-loop)
 # -------------------------------------------------
 def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
-    plot_motion_curve(motion_scores)
+    #plot_motion_curve(motion_scores)
     show_candidate_frames(FRAME_DIR, accident_frame, window=15)
-
-    result = input("Is the predicted accident frame correct? (y/n): ").strip().lower()
+    print(f"\nFolder: {FRAME_DIR}")
+    result = input("\nIs the predicted accident frame correct? (y/n): ").strip().lower()
 
     if result == 'y':
         final_frame = accident_frame
@@ -87,6 +84,8 @@ def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
         "motion_score": json.dumps(motion_scores),
         "Validity": validity
     })
+    
+    count+=1
 
 
 # -------------------------------------------------
@@ -105,16 +104,34 @@ if __name__ == "__main__":
         )
         writer.writeheader()
 
+        mem = input("Enter your name (l/a/s): ").strip().lower()
+        count = 0
+        
+        if mem == 'l':
+            print("Logged in as: Lohith")
+            start = 0
+        elif mem == 'a':
+            print("Logged in as: Ashmi")
+            start = 500
+        elif mem == 's':
+            print("Logged in as: Saketh")
+            start = 1000
+        
         # Read predicted CSV
         with open(in_csv, mode='r', newline='', encoding="utf-8") as csv_file:
             csv_reader = csv.DictReader(csv_file)
+            
 
             print("\nControls:")
-            print("Right Arrow / d  -> Next frame")
-            print("Left Arrow  / a  -> Previous frame")
-            print("ESC             -> Exit frame window")
+            print(" d  -> Next frame")
+            print(" a  -> Previous frame")
+            print(" q  -> Exit frame window\n")
 
-            for row in csv_reader:
+            for i, row in enumerate(csv_reader, start=0):
+                if start and i < start:
+                    continue
+                if count>=5:
+                    break
                 FRAME_DIR = row["folder"]
                 accident_frame = int(row["accident_frame"])
                 motion_scores = json.loads(row["motion_score"])
@@ -125,5 +142,6 @@ if __name__ == "__main__":
                     motion_scores,
                     writer
                 )
+                count+=1
 
     print(f"\nFinal verified CSV saved at: {out_csv}")
