@@ -63,11 +63,16 @@ def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
     #plot_motion_curve(motion_scores)
     show_candidate_frames(FRAME_DIR, accident_frame, window=15)
     print(f"\nFolder: {FRAME_DIR}")
-    result = input("\nIs the predicted accident frame correct? (y/n): ").strip().lower()
+    result = input("\nIs the predicted accident frame correct and q to quit the program? (y/n/q): ").strip().lower()
 
     if result == 'y':
         final_frame = accident_frame
         validity = "Verified"
+    
+    elif result == 'q':
+        print("Exiting verification.")
+        print(f"Verification done till {FRAME_DIR}.")
+        exit(0)
     else:
         final_frame = int(
             input("Enter correct accident frame number (enter -1 if not present): ")
@@ -77,7 +82,8 @@ def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
             validity = "Not Present"
         else:
             validity = "Corrected"
-
+    
+        
     writer.writerow({
         "folder": FRAME_DIR,
         "accident_frame": final_frame,
@@ -85,7 +91,7 @@ def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
         "Validity": validity
     })
     
-    count+=1
+    
 
 
 # -------------------------------------------------
@@ -95,27 +101,28 @@ if __name__ == "__main__":
 
     in_csv = "data\\excels\\predicted_accident_frames.csv"
     out_csv = "data\\excels\\final_accident_frames.csv"
+    file_exists = os.path.isfile(out_csv)
 
     # Open output CSV once and keep it open
-    with open(out_csv, mode="w", newline="", encoding="utf-8") as out_f:
+    with open(out_csv, mode="a", newline="", encoding="utf-8") as out_f:
         writer = csv.DictWriter(
             out_f,
             fieldnames=["folder", "accident_frame", "motion_score", "Validity"]
         )
-        writer.writeheader()
+        if not file_exists or os.stat(out_csv).st_size == 0:
+            writer.writeheader()
+
 
         mem = input("Enter your name (l/a/s): ").strip().lower()
         count = 0
+        start = int(input("Enter starting index (or press Enter to start from beginning): ") or 0)
         
         if mem == 'l':
             print("Logged in as: Lohith")
-            start = 0
         elif mem == 'a':
             print("Logged in as: Ashmi")
-            start = 500
         elif mem == 's':
             print("Logged in as: Saketh")
-            start = 1000
         
         # Read predicted CSV
         with open(in_csv, mode='r', newline='', encoding="utf-8") as csv_file:
@@ -130,7 +137,7 @@ if __name__ == "__main__":
             for i, row in enumerate(csv_reader, start=0):
                 if start and i < start:
                     continue
-                if count>=5:
+                if count>=500:
                     break
                 FRAME_DIR = row["folder"]
                 accident_frame = int(row["accident_frame"])
