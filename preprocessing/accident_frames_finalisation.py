@@ -71,7 +71,7 @@ def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
     
     elif result == 'q':
         print("Exiting verification.")
-        print(f"Verification done till {FRAME_DIR}.")
+        print(f"Next file to process is {FRAME_DIR}.")
         exit(0)
     else:
         final_frame = int(
@@ -116,7 +116,7 @@ if __name__ == "__main__":
         mem = input("Enter your name (l/a/s): ").strip().lower()
         count = 0
         start = int(input("Enter starting index (or press Enter to start from beginning): ") or 0)
-        
+        start-=1
         if mem == 'l':
             print("Logged in as: Lohith")
         elif mem == 'a':
@@ -135,7 +135,7 @@ if __name__ == "__main__":
             print(" q  -> Exit frame window\n")
 
             for i, row in enumerate(csv_reader, start=0):
-                if start and i < start:
+                if start and i <start:
                     continue
                 if count>=500:
                     break
