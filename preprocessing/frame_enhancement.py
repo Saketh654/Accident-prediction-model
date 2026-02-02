@@ -3,9 +3,8 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-# ----------------------------
+
 # Project paths
-# ----------------------------
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 INPUT_ROOT = os.path.join(ROOT, "data", "frames", "crash")
@@ -15,9 +14,7 @@ FRAME_EXT = (".jpg", ".png", ".jpeg")
 
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
 
-# ----------------------------
 # Enhancement functions
-# ----------------------------
 def enhance_frame(img):
     """
     Optimized for low-quality dashcam footage:
@@ -27,7 +24,7 @@ def enhance_frame(img):
     - light upscaling
     """
 
-    # 1. Mild denoising (remove compression noise)
+    
     img = cv2.fastNlMeansDenoisingColored(
         img, None,
         h=7, hColor=7,
@@ -35,7 +32,6 @@ def enhance_frame(img):
         searchWindowSize=21
     )
 
-    # 2. CLAHE (contrast enhancement)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
@@ -47,13 +43,11 @@ def enhance_frame(img):
 
     img = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
-    # 3. Gentle sharpening (no halos)
     kernel = np.array([[0, -1, 0],
                        [-1, 5, -1],
                        [0, -1, 0]])
     img = cv2.filter2D(img, -1, kernel)
 
-    # 4. Light upscaling (safe, fast)
     img = cv2.resize(
         img, None,
         fx=1.5, fy=1.5,
@@ -63,9 +57,7 @@ def enhance_frame(img):
     return img
 
 
-# ----------------------------
 # Process dataset
-# ----------------------------
 for video_folder in sorted(os.listdir(INPUT_ROOT)):
     in_dir = os.path.join(INPUT_ROOT, video_folder)
     out_dir = os.path.join(OUTPUT_ROOT, video_folder)

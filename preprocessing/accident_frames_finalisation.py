@@ -7,9 +7,7 @@ import json
 
 FRAME_EXTENSION = (".jpg", ".png", ".jpeg")
 
-# -------------------------------------------------
 # Show frames interactively with arrow keys
-# -------------------------------------------------
 def show_candidate_frames(frame_dir, accident_frame, window=10):
     frame_files = [f for f in os.listdir(frame_dir) if f.lower().endswith(FRAME_EXTENSION)]
     frame_files = sorted(frame_files, key=lambda x: int(''.join(filter(str.isdigit, x))))
@@ -44,9 +42,7 @@ def show_candidate_frames(frame_dir, accident_frame, window=10):
     cv2.destroyAllWindows()
 
 
-# -------------------------------------------------
 # Plot motion score curve
-# -------------------------------------------------
 def plot_motion_curve(motion_scores):
     plt.figure(figsize=(10, 4))
     plt.plot(motion_scores)
@@ -56,9 +52,7 @@ def plot_motion_curve(motion_scores):
     plt.show()
 
 
-# -------------------------------------------------
 # Verification (Human-in-the-loop)
-# -------------------------------------------------
 def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
     show_candidate_frames(FRAME_DIR, accident_frame, window=15)
     print(f"\nFolder: {FRAME_DIR}")
@@ -93,9 +87,7 @@ def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
     
 
 
-# -------------------------------------------------
 # Main Driver
-# -------------------------------------------------
 if __name__ == "__main__":
 
     in_csv = "data\\excels\\predicted_accident_frames.csv"
@@ -122,7 +114,6 @@ if __name__ == "__main__":
         elif mem == 's':
             print("Logged in as: Saketh")
         
-        # Read predicted CSV
         with open(in_csv, mode='r', newline='', encoding="utf-8") as csv_file:
             csv_reader = csv.DictReader(csv_file)
             

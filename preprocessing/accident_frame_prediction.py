@@ -10,13 +10,11 @@ FRAME_EXTENSION = (".jpg", ".png", ".jpeg")
 def detect_accident_frame_from_frames(frame_dir):
     frame_files = sorted(os.listdir(frame_dir))
     
-    # Read first frame
     prev = cv2.imread(os.path.join(frame_dir, frame_files[0]))
     prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
 
     motion_scores = []
 
-    # Compute motion score between consecutive frames
     for f in frame_files[1:]:
         curr = cv2.imread(os.path.join(frame_dir, f))
         curr_gray = cv2.cvtColor(curr, cv2.COLOR_BGR2GRAY)
@@ -27,7 +25,6 @@ def detect_accident_frame_from_frames(frame_dir):
 
         prev_gray = curr_gray
 
-    # Accident frame ≈ max motion change
     accident_frame = np.argmax(motion_scores) + 1
     return accident_frame, motion_scores
 
