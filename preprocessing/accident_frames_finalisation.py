@@ -60,7 +60,6 @@ def plot_motion_curve(motion_scores):
 # Verification (Human-in-the-loop)
 # -------------------------------------------------
 def verify_accident_frames(FRAME_DIR, accident_frame, motion_scores, writer):
-    #plot_motion_curve(motion_scores)
     show_candidate_frames(FRAME_DIR, accident_frame, window=15)
     print(f"\nFolder: {FRAME_DIR}")
     result = input("\nIs the predicted accident frame correct and q to quit the program? (y/n/q): ").strip().lower()
@@ -103,7 +102,6 @@ if __name__ == "__main__":
     out_csv = "data\\excels\\final_accident_frames.csv"
     file_exists = os.path.isfile(out_csv)
 
-    # Open output CSV once and keep it open
     with open(out_csv, mode="a", newline="", encoding="utf-8") as out_f:
         writer = csv.DictWriter(
             out_f,
