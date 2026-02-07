@@ -70,3 +70,11 @@ for epoch in range(EPOCHS):
     print(f"Average Loss: {avg_loss:.4f}")
 
 print("\n✅ Training completed")
+
+# -------------------------
+# Save trained model
+# -------------------------
+MODEL_PATH = "accident_model.pth"
+torch.save(model.state_dict(), MODEL_PATH)
+print(f"✅ Model saved at: {MODEL_PATH}")
+    
