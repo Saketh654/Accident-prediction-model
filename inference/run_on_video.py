@@ -6,11 +6,14 @@ from collections import deque
 
 from models.accident_3d_cnn import Accident3DCNN
 
+
+risk_over_time = []
+
 # -----------------------
 # CONFIG
 # -----------------------
-VIDEO_PATH = r"L:\Accident Prediction\data\videos\crash\sample.mp4"
-OUTPUT_PATH = "output_with_alert.mp4"
+VIDEO_PATH = r"L:\Accident Prediction\data\videos\normal\000220.mp4"
+OUTPUT_PATH = "output_with_alert.avi"
 
 CLIP_LEN = 16
 THRESHOLD = 0.7
@@ -24,17 +27,37 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 model = Accident3DCNN().to(DEVICE)
 model.load_state_dict(torch.load("accident_model.pth", map_location=DEVICE))
 model.eval()
-
 # -----------------------
-# Video IO
+# Video IO (ROBUST)
 # -----------------------
 cap = cv2.VideoCapture(VIDEO_PATH)
+
+if not cap.isOpened():
+    raise RuntimeError("❌ Could not open input video")
+
 fps = cap.get(cv2.CAP_PROP_FPS)
+if fps == 0 or fps is None:
+    fps = 10  # fallback
+
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-out = cv2.VideoWriter(OUTPUT_PATH, fourcc, fps, (width, height))
+print(f"[INFO] FPS={fps}, Size=({width},{height})")
+
+# FORCE Windows-safe codec
+OUTPUT_PATH = "output_with_alert.avi"
+fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+
+out = cv2.VideoWriter(
+    OUTPUT_PATH,
+    fourcc,
+    fps,
+    (width, height),
+    True
+)
+
+if not out.isOpened():
+    raise RuntimeError("❌ VideoWriter failed to open")
 
 # -----------------------
 # Sliding window buffer
@@ -71,6 +94,10 @@ while True:
         with torch.no_grad():
             logit = model(clip)
             risk = torch.sigmoid(logit).item()
+        
+            if risk is not None:
+                risk_over_time.append(risk)
+
 
         risk_history.append(risk)
 
@@ -104,6 +131,11 @@ while True:
             3
         )
 
+
+    assert display.shape[1] == width
+    assert display.shape[0] == height
+
+
     out.write(display)
 
 # -----------------------
@@ -112,3 +144,8 @@ while True:
 cap.release()
 out.release()
 print("✅ Inference complete. Output saved:", OUTPUT_PATH)
+
+
+
+np.save("risk_normal.npy", np.array(risk_over_time))
+print("Saved normal risk curve")
