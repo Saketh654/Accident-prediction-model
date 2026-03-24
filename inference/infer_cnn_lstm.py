@@ -1,71 +1,71 @@
-import os
 import cv2
 import torch
 import numpy as np
 from collections import deque
+import torchvision.models as models
+import torch.nn as nn
 
-from models.accident_3d_cnn import Accident3DCNN
+from models.cnn_lstm import CNNLSTM
 
-
-risk_over_time = []
-
+torch.backends.cudnn.benchmark = True
 # -----------------------
 # CONFIG
 # -----------------------
 VIDEO_PATH = r"C:\Users\lohit\Downloads\000096.mp4"
-OUTPUT_PATH = "output_with_alert.avi"
+OUTPUT_PATH = "output_cnn_lstm_alert.avi"
 
 CLIP_LEN = 16
-THRESHOLD = 0.7
-K = 3
+THRESHOLD = 0.2      # 🔥 CALIBRATED
+K = 2                # 🔥 TEMPORAL CONSISTENCY
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 # -----------------------
 # Load model
 # -----------------------
-model = Accident3DCNN().to(DEVICE)
-model.load_state_dict(torch.load("checkpoints/accident_model.pth", map_location=DEVICE))
+def get_cnn_backbone():
+    cnn = models.resnet18(weights=None)
+    feature_dim = cnn.fc.in_features
+    cnn.fc = nn.Identity()
+    return cnn, feature_dim
+
+
+cnn, feature_dim = get_cnn_backbone()
+
+model = CNNLSTM(
+    cnn=cnn,
+    feature_dim=feature_dim,
+    hidden_dim=256,
+    num_classes=1
+).to(DEVICE)
+
+model.load_state_dict(
+    torch.load("checkpoints/cnn_lstm_best.pth", map_location=DEVICE)
+)
+
 model.eval()
+
+
 # -----------------------
-# Video IO (ROBUST)
+# Video IO
 # -----------------------
 cap = cv2.VideoCapture(VIDEO_PATH)
-
-if not cap.isOpened():
-    raise RuntimeError("❌ Could not open input video")
-
-fps = cap.get(cv2.CAP_PROP_FPS)
-if fps == 0 or fps is None:
-    fps = 10  # fallback
-
+fps = cap.get(cv2.CAP_PROP_FPS) or 10
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-print(f"[INFO] FPS={fps}, Size=({width},{height})")
-
-# FORCE Windows-safe codec
-OUTPUT_PATH = "output_with_alert.avi"
 fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+out = cv2.VideoWriter(OUTPUT_PATH, fourcc, fps, (width, height))
 
-out = cv2.VideoWriter(
-    OUTPUT_PATH,
-    fourcc,
-    fps,
-    (width, height),
-    True
-)
-
-if not out.isOpened():
-    raise RuntimeError("❌ VideoWriter failed to open")
 
 # -----------------------
-# Sliding window buffer
+# Buffers
 # -----------------------
 frame_buffer = deque(maxlen=CLIP_LEN)
 risk_history = deque(maxlen=K)
+risk_over_time = []
 
-frame_idx = 0
 
 # -----------------------
 # Inference loop
@@ -75,38 +75,29 @@ while True:
     if not ret:
         break
 
-    frame_idx += 1
-
-    # Resize & normalize (same as training)
     resized = cv2.resize(frame, (224, 224))
     resized = resized.astype(np.float32) / 255.0
-
     frame_buffer.append(resized)
 
-    alert = False
     risk = None
+    alert = False
 
     if len(frame_buffer) == CLIP_LEN:
-        clip = np.stack(frame_buffer, axis=0)  # (T,H,W,C)
-        clip = torch.from_numpy(clip).permute(3, 0, 1, 2).unsqueeze(0)
-        clip = clip.to(DEVICE)
+        clip = np.stack(frame_buffer, axis=0)
+        clip = torch.from_numpy(clip).permute(0, 3, 1, 2)
+        clip = clip.unsqueeze(0).to(DEVICE)
 
         with torch.no_grad():
-            logit = model(clip)
-            risk = torch.sigmoid(logit).item()
-        
-            if risk is not None:
-                risk_over_time.append(risk)
+            logits = model(clip)
+            risk = torch.sigmoid(logits).item()
 
-
+        print(f"Risk: {risk:.3f}")
+        risk_over_time.append(risk)
         risk_history.append(risk)
 
         if len(risk_history) == K and all(r >= THRESHOLD for r in risk_history):
             alert = True
 
-    # -----------------------
-    # Overlay text
-    # -----------------------
     display = frame.copy()
 
     if risk is not None:
@@ -131,21 +122,14 @@ while True:
             3
         )
 
-
-    assert display.shape[1] == width
-    assert display.shape[0] == height
-
-
     out.write(display)
+
 
 # -----------------------
 # Cleanup
 # -----------------------
 cap.release()
 out.release()
-print("✅ Inference complete. Output saved:", OUTPUT_PATH)
+np.save("risk_cnn_lstm.npy", np.array(risk_over_time))
 
-
-
-np.save("risk_normal.npy", np.array(risk_over_time))
-print("Saved normal risk curve")
+print("✅ CNN+LSTM inference complete.")
