@@ -7,10 +7,12 @@ Outputs:
   - Side-by-side risk curve plots
 """
 
-import os
+import sys, os
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT)
+
 import numpy as np
 import torch
-import torch.nn as nn
 import matplotlib.pyplot as plt
 from sklearn.metrics import (
     roc_auc_score, accuracy_score,
@@ -29,114 +31,122 @@ DEVICE     = "cuda" if torch.cuda.is_available() else "cpu"
 LABELS_CSV = "data/processed/labels_two_stream.csv"
 THRESHOLD  = 0.5
 
-# ─────────────────────────────────────────────
-# Load model
-# ─────────────────────────────────────────────
-model = TwoStreamCNN(base_ch=32, fusion="concat").to(DEVICE)
-model.load_state_dict(
-    torch.load("checkpoints/two_stream_best.pth", map_location=DEVICE)
-)
-model.eval()
 
-# ─────────────────────────────────────────────
-# DataLoader (no shuffle for evaluation)
-# ─────────────────────────────────────────────
-loader = get_two_stream_dataloader(
-    labels_csv=LABELS_CSV,
-    batch_size=4,
-    shuffle=False,
-    num_workers=0
-)
+def main():
+    # ─────────────────────────────────────────────
+    # Load model
+    # ─────────────────────────────────────────────
+    model = TwoStreamCNN(base_ch=32, fusion="concat").to(DEVICE)
+    model.load_state_dict(
+        torch.load("checkpoints/two_stream_best.pth", map_location=DEVICE)
+    )
+    model.eval()
 
-# ─────────────────────────────────────────────
-# Inference
-# ─────────────────────────────────────────────
-all_preds  = []
-all_labels = []
+    # ─────────────────────────────────────────────
+    # DataLoader (no shuffle for evaluation)
+    # ─────────────────────────────────────────────
+    loader = get_two_stream_dataloader(
+        labels_csv=LABELS_CSV,
+        batch_size=6,
+        shuffle=False,
+        num_workers=8
+    )
 
-print("Running evaluation...")
-with torch.no_grad():
-    for rgb, flow, labels in tqdm(loader):
-        rgb    = rgb.to(DEVICE)
-        flow   = flow.to(DEVICE)
-        labels = labels.numpy()
+    # ─────────────────────────────────────────────
+    # Inference
+    # ─────────────────────────────────────────────
+    all_preds  = []
+    all_labels = []
 
-        logits = model(rgb, flow)
-        probs  = torch.sigmoid(logits).squeeze(1).cpu().numpy()
+    print("Running evaluation...")
+    with torch.no_grad():
+        for rgb, flow, labels in tqdm(loader):
+            rgb    = rgb.to(DEVICE)
+            flow   = flow.to(DEVICE)
+            labels = labels.numpy()
 
-        all_preds.extend(probs.tolist())
-        all_labels.extend(labels.tolist())
+            logits = model(rgb, flow)
+            probs  = torch.sigmoid(logits).squeeze(1).cpu().numpy()
 
-all_preds  = np.array(all_preds)
-all_labels = np.array(all_labels)
+            all_preds.extend(probs.tolist())
+            all_labels.extend(labels.tolist())
 
-# Binarize labels at 0.5 (soft labels → hard)
-binary_labels = (all_labels >= 0.5).astype(int)
-binary_preds  = (all_preds  >= THRESHOLD).astype(int)
+    all_preds  = np.array(all_preds)
+    all_labels = np.array(all_labels)
 
-# ─────────────────────────────────────────────
-# Metrics
-# ─────────────────────────────────────────────
-auc       = roc_auc_score(binary_labels, all_preds)
-acc       = accuracy_score(binary_labels, binary_preds)
-precision = precision_score(binary_labels, binary_preds, zero_division=0)
-recall    = recall_score(binary_labels, binary_preds, zero_division=0)
-f1        = f1_score(binary_labels, binary_preds, zero_division=0)
+    # Binarize labels
+    binary_labels = (all_labels >= 0.5).astype(int)
+    binary_preds  = (all_preds  >= THRESHOLD).astype(int)
 
-print("\n── Two-Stream Evaluation Results ──────────────────")
-print(f"  AUC       : {auc:.4f}")
-print(f"  Accuracy  : {acc:.4f}")
-print(f"  Precision : {precision:.4f}")
-print(f"  Recall    : {recall:.4f}")
-print(f"  F1 Score  : {f1:.4f}")
-print("────────────────────────────────────────────────────")
+    # ─────────────────────────────────────────────
+    # Metrics
+    # ─────────────────────────────────────────────
+    auc       = roc_auc_score(binary_labels, all_preds)
+    acc       = accuracy_score(binary_labels, binary_preds)
+    precision = precision_score(binary_labels, binary_preds, zero_division=0)
+    recall    = recall_score(binary_labels, binary_preds, zero_division=0)
+    f1        = f1_score(binary_labels, binary_preds, zero_division=0)
 
-# ─────────────────────────────────────────────
-# ROC Curve
-# ─────────────────────────────────────────────
-fpr, tpr, _ = roc_curve(binary_labels, all_preds)
+    print("\n── Two-Stream Evaluation Results ──────────────────")
+    print(f"  AUC       : {auc:.4f}")
+    print(f"  Accuracy  : {acc:.4f}")
+    print(f"  Precision : {precision:.4f}")
+    print(f"  Recall    : {recall:.4f}")
+    print(f"  F1 Score  : {f1:.4f}")
+    print("────────────────────────────────────────────────────")
 
-plt.figure(figsize=(7, 5))
-plt.plot(fpr, tpr, label=f"Two-Stream (AUC={auc:.3f})", color="royalblue", lw=2)
-plt.plot([0, 1], [0, 1], "k--", lw=1)
-plt.xlabel("False Positive Rate")
-plt.ylabel("True Positive Rate")
-plt.title("ROC Curve — Two-Stream Model")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.savefig("roc_two_stream.png", dpi=150)
-plt.show()
-print("ROC curve saved: roc_two_stream.png")
+    # ─────────────────────────────────────────────
+    # ROC Curve
+    # ─────────────────────────────────────────────
+    fpr, tpr, _ = roc_curve(binary_labels, all_preds)
 
-# ─────────────────────────────────────────────
-# Risk curve comparison (requires saved .npy files)
-# ─────────────────────────────────────────────
-FPS       = 10
-THRESHOLD_LINE = 0.5
+    plt.figure(figsize=(7, 5))
+    plt.plot(fpr, tpr, label=f"Two-Stream (AUC={auc:.3f})", lw=2)
+    plt.plot([0, 1], [0, 1], "k--", lw=1)
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve — Two-Stream Model")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("roc_two_stream.png", dpi=150)
+    plt.show()
+    print("ROC curve saved: roc_two_stream.png")
 
-risk_files = {
-    "3D CNN"       : "risk_normal.npy",
-    "CNN+LSTM"     : "risk_cnn_lstm.npy",
-    "Two-Stream"   : "risk_two_stream.npy",
-}
+    # ─────────────────────────────────────────────
+    # Risk curve comparison
+    # ─────────────────────────────────────────────
+    FPS = 10
+    THRESHOLD_LINE = 0.5
 
-plt.figure(figsize=(10, 5))
-colors = ["steelblue", "darkorange", "green"]
+    risk_files = {
+        "3D CNN"     : "risk_normal.npy",
+        "CNN+LSTM"   : "risk_cnn_lstm.npy",
+        "Two-Stream" : "risk_two_stream.npy",
+    }
 
-for (name, path), color in zip(risk_files.items(), colors):
-    if os.path.exists(path):
-        risk = np.load(path)
-        time = [i / FPS for i in range(len(risk))]
-        plt.plot(time, risk, label=name, color=color, lw=2)
+    plt.figure(figsize=(10, 5))
+    colors = ["steelblue", "darkorange", "green"]
 
-plt.axhline(y=THRESHOLD_LINE, linestyle="--", color="red", label="Threshold")
-plt.xlabel("Time (seconds)")
-plt.ylabel("Risk Score")
-plt.title("Risk Score Comparison — All Models")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.savefig("risk_comparison.png", dpi=150)
-plt.show()
-print("Comparison plot saved: risk_comparison.png")
+    for (name, path), color in zip(risk_files.items(), colors):
+        if os.path.exists(path):
+            risk = np.load(path)
+            time = [i / FPS for i in range(len(risk))]
+            plt.plot(time, risk, label=name, color=color, lw=2)
+
+    plt.axhline(y=THRESHOLD_LINE, linestyle="--", color="red", label="Threshold")
+    plt.xlabel("Time (seconds)")
+    plt.ylabel("Risk Score")
+    plt.title("Risk Score Comparison — All Models")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("risk_comparison.png", dpi=150)
+    plt.show()
+    print("Comparison plot saved: risk_comparison.png")
+
+
+if __name__ == "__main__":
+    import multiprocessing
+    multiprocessing.freeze_support()
+    main()
