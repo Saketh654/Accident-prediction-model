@@ -15,10 +15,10 @@ from models.two_stream_cnn import TwoStreamCNN
 
 DEVICE         = "cuda" if torch.cuda.is_available() else "cpu"
 EPOCHS         = 10
-BATCH_SIZE     = 4
+BATCH_SIZE     = 6
 LEARNING_RATE  = 1e-4
 WEIGHT_DECAY   = 1e-4
-NUM_WORKERS    = 6
+NUM_WORKERS    = 8
 LABELS_CSV     = "data/processed/labels_two_stream.csv"
 CHECKPOINT_DIR = "checkpoints"
 

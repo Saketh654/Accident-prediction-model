@@ -5,6 +5,11 @@ Real-time inference with the Two-Stream model on a video file.
 Computes optical flow on-the-fly — no pre-saved flow needed.
 """
 
+import sys, os
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT)
+
+
 import cv2
 import torch
 import numpy as np
