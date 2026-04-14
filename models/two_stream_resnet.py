@@ -68,7 +68,7 @@ class StreamEncoder(nn.Module):
         return feat
 
 
-class TwoStreamCNN(nn.Module):
+class TwoStreamCNNRes(nn.Module):
     """
     Two-Stream CNN fusing spatial (RGB) and temporal (optical flow) features.
 
