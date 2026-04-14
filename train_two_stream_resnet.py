@@ -88,7 +88,6 @@ if __name__ == "__main__":
 
     # ── Model ──────────────────────────────────────────────────────────────────
     model = TwoStreamCNNRes(fusion="concat").to(DEVICE)
-    model = torch.compile(model)   # PyTorch 2.x: ~10–20% speedup after warm-up
 
     print(f"\nModel on : {DEVICE}")
     print(f"Params   : {sum(p.numel() for p in model.parameters()):,}")
