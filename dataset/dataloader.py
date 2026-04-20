@@ -5,7 +5,8 @@ def get_dataloader(
     labels_csv,
     batch_size=4,
     shuffle=True,
-    num_workers=4
+    num_workers=4,
+    pin_memory=True
 ):
     """
     Creates PyTorch DataLoader
@@ -18,7 +19,9 @@ def get_dataloader(
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=pin_memory,
+        persistent_workers=True if num_workers > 0 else False,
+        prefetch_factor=2 if num_workers > 0 else None,
     )
 
     return dataloader

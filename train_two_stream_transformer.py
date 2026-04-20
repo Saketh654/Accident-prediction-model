@@ -1,3 +1,10 @@
+"""
+train_two_stream_transformer.py — Two-Stream Transformer training with train/val split.
+
+Uses:
+    data/processed/labels_two_stream_train.csv
+    data/processed/labels_two_stream_val.csv
+"""
 import os
 import torch
 import torch.nn as nn
@@ -10,71 +17,88 @@ from models.two_stream_transformer import TwoStreamTransformer
 
 DEVICE       = "cuda" if torch.cuda.is_available() else "cpu"
 EPOCHS       = 10
-BATCH_SIZE   = 8    # lower than ResNet version due to attention memory overhead
+BATCH_SIZE   = 8
 LR           = 1e-4
 WEIGHT_DECAY = 1e-4
 NUM_WORKERS  = 6
-LABELS_CSV   = "data/processed/labels_two_stream.csv"
-CHECKPOINT   = "checkpoints/two_stream_transformer_best.pth"
 
-os.makedirs("checkpoints", exist_ok=True)
-torch.backends.cudnn.benchmark = True
+TRAIN_CSV  = "data/processed/labels_two_stream_train.csv"
+VAL_CSV    = "data/processed/labels_two_stream_val.csv"
+BEST_CKPT  = "checkpoints/two_stream_transformer_best.pth"
+FINAL_CKPT = "checkpoints/two_stream_transformer_final.pth"
+
 
 if __name__ == "__main__":
-    loader = get_two_stream_dataloader(
-        labels_csv=LABELS_CSV,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        num_workers=NUM_WORKERS,
-        pin_memory=True,
-        prefetch_factor=2,
-        persistent_workers=True
-    )
+    import multiprocessing
+    multiprocessing.freeze_support()
 
-    model = TwoStreamTransformer(
-        d_model=512, nhead=8, num_layers=2, dropout=0.1
-    ).to(DEVICE)
+    os.makedirs("checkpoints", exist_ok=True)
+    torch.backends.cudnn.benchmark = True
 
+    loader_kw = dict(num_workers=NUM_WORKERS, pin_memory=True,
+                     persistent_workers=True, prefetch_factor=2)
+    train_loader = get_two_stream_dataloader(TRAIN_CSV, batch_size=BATCH_SIZE,
+                                             shuffle=True,  **loader_kw)
+    val_loader   = get_two_stream_dataloader(VAL_CSV,   batch_size=BATCH_SIZE,
+                                             shuffle=False, **loader_kw)
+
+    print(f"Device: {DEVICE}")
+    print(f"Train: {len(train_loader.dataset)} clips | Val: {len(val_loader.dataset)} clips")
+
+    model = TwoStreamTransformer(d_model=512, nhead=8, num_layers=2, dropout=0.1).to(DEVICE)
     print(f"Params: {sum(p.numel() for p in model.parameters()):,}")
 
     pos_weight = torch.tensor([3.0]).to(DEVICE)
     criterion  = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    optimizer  = optim.AdamW(
-        model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY
-    )
-    scheduler  = optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=EPOCHS, eta_min=1e-6
-    )
-    scaler = GradScaler("cuda")
-    best_loss = float("inf")
+    optimizer  = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    scheduler  = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-6)
+    scaler     = GradScaler("cuda")
+
+    best_val_loss = float("inf")
 
     for epoch in range(EPOCHS):
-        model.train()
-        running_loss = 0.0
+        print(f"Epoch [{epoch+1}/{EPOCHS}]  LR={scheduler.get_last_lr()[0]:.2e}")
 
-        for rgb, flow, labels in tqdm(loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
+        # Train
+        model.train()
+        train_loss = 0.0
+        for rgb, flow, labels in tqdm(train_loader, desc="  train"):
             rgb    = rgb.to(DEVICE, non_blocking=True)
             flow   = flow.to(DEVICE, non_blocking=True)
             labels = labels.float().unsqueeze(1).to(DEVICE, non_blocking=True)
-
             optimizer.zero_grad(set_to_none=True)
-
             with autocast("cuda"):
-                logits = model(rgb, flow)
-                loss   = criterion(logits, labels)
-
+                loss = criterion(model(rgb, flow), labels)
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(optimizer)
             scaler.update()
-            running_loss += loss.item()
+            train_loss += loss.item()
 
-        avg = running_loss / len(loader)
+        # Validate
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for rgb, flow, labels in tqdm(val_loader, desc="  val  ", leave=False):
+                rgb    = rgb.to(DEVICE, non_blocking=True)
+                flow   = flow.to(DEVICE, non_blocking=True)
+                labels = labels.float().unsqueeze(1).to(DEVICE, non_blocking=True)
+                with autocast("cuda"):
+                    val_loss += criterion(model(rgb, flow), labels).item()
+
         scheduler.step()
-        print(f"  Avg loss: {avg:.4f}")
+        avg_train = train_loss / len(train_loader)
+        avg_val   = val_loss   / len(val_loader)
+        print(f"  train={avg_train:.4f}  val={avg_val:.4f}", end="")
 
-        if avg < best_loss:
-            best_loss = avg
-            torch.save(model.state_dict(), CHECKPOINT)
-            print(f"  Saved → {CHECKPOINT}")
+        if avg_val < best_val_loss:
+            best_val_loss = avg_val
+            torch.save(model.state_dict(), BEST_CKPT)
+            print(f"  -> saved best")
+        else:
+            print()
+
+    torch.save(model.state_dict(), FINAL_CKPT)
+    print(f"\nTraining complete. Best val loss: {best_val_loss:.4f}")
+    print(f"Best checkpoint: {BEST_CKPT}")

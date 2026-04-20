@@ -42,8 +42,8 @@ class VideoClipDataset(Dataset):
         # ----------------------------
         clip = torch.from_numpy(clip).float()
 
-        # (T, H, W, C) → (T, C, H, W)
-        clip = clip.permute(0, 3, 1, 2)
+        # (T, H, W, C) → (C, T, H, W)
+        clip = clip.permute(3, 0, 1, 2)
 
         label = torch.tensor(label, dtype=torch.float32)
 

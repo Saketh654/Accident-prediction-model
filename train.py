@@ -1,80 +1,89 @@
+"""
+train.py — 3D CNN training with train/val split + full speed optimisations.
+
+Uses:
+    data/processed/labels_enhanced_npz_train.csv
+    data/processed/labels_enhanced_npz_val.csv
+"""
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.amp import GradScaler, autocast
 from tqdm import tqdm
 
 from dataset.dataloader import get_dataloader
 from models.accident_3d_cnn import Accident3DCNN
 
-# -------------------------
-# Configuration
-# -------------------------
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-EPOCHS = 5
+DEVICE     = "cuda" if torch.cuda.is_available() else "cpu"
+EPOCHS     = 10
 BATCH_SIZE = 4
-LEARNING_RATE = 1e-4
+LR         = 1e-4
 
-LABELS_CSV = "data/processed/labels_enhanced_npz.csv"
+TRAIN_CSV  = "data/processed/labels_enhanced_npz_train.csv"
+VAL_CSV    = "data/processed/labels_enhanced_npz_val.csv"
+CHECKPOINT = "checkpoints/accident_model.pth"
 
-# -------------------------
-# DataLoader
-# -------------------------
-train_loader = get_dataloader(
-    labels_csv=LABELS_CSV,
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-    num_workers=0  # safer on Windows
-)
 
-# -------------------------
-# Model
-# -------------------------
-model = Accident3DCNN().to(DEVICE)
+if __name__ == "__main__":
+    # Windows requires all multiprocessing code inside this guard.
+    # Without it, each worker tries to re-run the whole script on spawn.
+    import multiprocessing
+    multiprocessing.freeze_support()
 
-# -------------------------
-# Class-aware loss
-# -------------------------
-pos_weight = torch.tensor([3.0]).to(DEVICE)
-criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    os.makedirs("checkpoints", exist_ok=True)
+    torch.backends.cudnn.benchmark = True
 
-# -------------------------
-# Optimizer
-# -------------------------
-optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    train_loader = get_dataloader(TRAIN_CSV, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader   = get_dataloader(VAL_CSV,   batch_size=BATCH_SIZE, shuffle=False)
 
-# -------------------------
-# Training loop
-# -------------------------
-for epoch in range(EPOCHS):
-    model.train()
-    running_loss = 0.0
+    print(f"Device      : {DEVICE}")
+    print(f"Train clips : {len(train_loader.dataset)}")
+    print(f"Val   clips : {len(val_loader.dataset)}")
 
-    print(f"\nEpoch [{epoch+1}/{EPOCHS}]")
+    model      = Accident3DCNN().to(DEVICE)
+    pos_weight = torch.tensor([3.0]).to(DEVICE)
+    criterion  = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    optimizer  = optim.Adam(model.parameters(), lr=LR)
+    scaler     = GradScaler("cuda")
 
-    for clips, labels in tqdm(train_loader):
-        clips = clips.to(DEVICE)
-        labels = labels.to(DEVICE).unsqueeze(1)  # (B, 1)
+    best_val_loss = float("inf")
 
-        # Forward
-        outputs = model(clips)
-        loss = criterion(outputs, labels)
+    for epoch in range(EPOCHS):
+        # Train
+        model.train()
+        train_loss = 0.0
+        for clips, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [train]"):
+            clips  = clips.to(DEVICE, non_blocking=True)
+            labels = labels.to(DEVICE, non_blocking=True).unsqueeze(1)
+            optimizer.zero_grad(set_to_none=True)
+            with autocast("cuda"):
+                loss = criterion(model(clips), labels)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+            train_loss += loss.item()
 
-        # Backward
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        # Validate
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for clips, labels in tqdm(val_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [val]  ", leave=False):
+                clips  = clips.to(DEVICE, non_blocking=True)
+                labels = labels.to(DEVICE, non_blocking=True).unsqueeze(1)
+                with autocast("cuda"):
+                    val_loss += criterion(model(clips), labels).item()
 
-        running_loss += loss.item()
+        avg_train = train_loss / len(train_loader)
+        avg_val   = val_loss   / len(val_loader)
+        print(f"Epoch {epoch+1:02d} | train={avg_train:.4f}  val={avg_val:.4f}", end="")
 
-    avg_loss = running_loss / len(train_loader)
-    print(f"Average Loss: {avg_loss:.4f}")
+        if avg_val < best_val_loss:
+            best_val_loss = avg_val
+            torch.save(model.state_dict(), CHECKPOINT)
+            print(f"  -> saved best")
+        else:
+            print()
 
-print("\n✅ Training completed")
-
-# -------------------------
-# Save trained model
-# -------------------------
-MODEL_PATH = "accident_model.pth"
-torch.save(model.state_dict(), MODEL_PATH)
-print(f"✅ Model saved at: {MODEL_PATH}")
-    
+    print(f"\nTraining complete. Best val loss: {best_val_loss:.4f}")
+    print(f"Checkpoint: {CHECKPOINT}")
