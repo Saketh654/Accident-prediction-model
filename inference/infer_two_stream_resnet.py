@@ -23,7 +23,7 @@ from models.two_stream_resnet import TwoStreamCNNRes
 # ─────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────
-VIDEO_PATH  = r"C:\Users\lohit\Downloads\000096.mp4"   # ← change this
+VIDEO_PATH  = r"D:\College\Accident Prediction\data\videos\Crash\000093.mp4"  # ← change this
 OUTPUT_PATH = "output_two_stream_resnet.avi"
 CHECKPOINT  = "checkpoints/two_stream_resnet_final.pth"
 

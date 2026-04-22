@@ -4,14 +4,17 @@ import numpy as np
 from collections import deque
 import torchvision.models as models
 import torch.nn as nn
-
+import sys
+import os
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT)
 from models.cnn_lstm import CNNLSTM
 
 torch.backends.cudnn.benchmark = True
 # -----------------------
 # CONFIG
 # -----------------------
-VIDEO_PATH = r"C:\Users\lohit\Downloads\000096.mp4"
+VIDEO_PATH = r"D:\College\Accident Prediction\data\videos\Crash\000093.mp4"
 OUTPUT_PATH = "output_cnn_lstm_alert.avi"
 
 CLIP_LEN = 16
@@ -114,7 +117,7 @@ while True:
     if alert:
         cv2.putText(
             display,
-            "⚠️ ACCIDENT RISK!",
+            "ACCIDENT RISK!",
             (20, 100),
             cv2.FONT_HERSHEY_SIMPLEX,
             1.5,

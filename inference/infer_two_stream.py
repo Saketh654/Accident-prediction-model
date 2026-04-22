@@ -20,7 +20,7 @@ from models.two_stream_cnn import TwoStreamCNN
 # ─────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────
-VIDEO_PATH  = r"C:\Users\lohit\Downloads\000096.mp4"
+VIDEO_PATH  = r"D:\College\Accident Prediction\data\videos\Crash\000093.mp4"
 OUTPUT_PATH = "output_two_stream_alert.avi"
 
 CLIP_LEN    = 16
@@ -34,7 +34,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # ─────────────────────────────────────────────
 model = TwoStreamCNN(base_ch=32, fusion="concat").to(DEVICE)
 model.load_state_dict(
-    torch.load("checkpoints/two_stream_best.pth", map_location=DEVICE)
+    torch.load("checkpoints/two_stream_final.pth", map_location=DEVICE)
 )
 model.eval()
 
