@@ -24,3 +24,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+/checkpoints/cnn_transformer_best.pth
+
+/checkpoints/two_stream_transformer_best.pth
+/checkpoints/two_stream_transformer_final.pth
+/checkpoints/two_stream_resnet_best.pth
+/checkpoints/two_stream_resnet_final.pth
