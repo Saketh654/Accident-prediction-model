@@ -1,2 +1,6 @@
 /data
 /venv
+/checkpoints/cnn_transformer_best.pth
+
+/checkpoints/two_stream_transformer_best.pth
+/checkpoints/two_stream_transformer_final.pth

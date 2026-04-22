@@ -36,14 +36,16 @@ class CNNTransformer(nn.Module):
     """
 
     def __init__(self, feature_dim=512, d_model=256, nhead=8,
-                 num_layers=4, dim_feedforward=512, dropout=0.1):
+                 num_layers=4, dim_feedforward=512, dropout=0.1):   
         super().__init__()
 
         # ── CNN backbone ──────────────────────────────────────
         backbone = models.resnet18(weights="IMAGENET1K_V1")
         backbone.fc = nn.Identity()
         self.cnn = backbone
-
+        # In CNNTransformer.__init__, after loading backbone:
+        for param in self.cnn.parameters():
+            param.requires_grad = False
         # Project CNN features to transformer d_model
         self.input_proj = nn.Linear(feature_dim, d_model)
 
@@ -85,7 +87,7 @@ class CNNTransformer(nn.Module):
         B, T, C, H, W = x.shape
 
         # Extract per-frame features
-        feat = self.cnn(x.view(B * T, C, H, W))   # (B*T, 512)
+        feat = self.cnn(x.reshape(B * T, C, H, W))   # (B*T, 512)
         feat = feat.view(B, T, -1)                  # (B, T, 512)
 
         # Project to d_model

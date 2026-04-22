@@ -17,7 +17,7 @@ from models.cnn_transformer import CNNTransformer
 
 DEVICE       = "cuda" if torch.cuda.is_available() else "cpu"
 EPOCHS       = 10
-BATCH_SIZE   = 4
+BATCH_SIZE   = 32
 LR           = 1e-4
 WEIGHT_DECAY = 1e-4
 
@@ -39,8 +39,8 @@ if __name__ == "__main__":
     print(f"Train: {len(train_loader.dataset)} clips | Val: {len(val_loader.dataset)} clips")
 
     model = CNNTransformer(
-        feature_dim=512, d_model=256, nhead=8,
-        num_layers=4, dim_feedforward=512
+        feature_dim=512, d_model=512, nhead=8,
+        num_layers=8, dim_feedforward=2048, dropout=0.1
     ).to(DEVICE)
 
     print(f"Device: {DEVICE} | Params: {sum(p.numel() for p in model.parameters()):,}")

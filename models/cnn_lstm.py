@@ -12,10 +12,11 @@ class CNNLSTM(nn.Module):
         self.lstm = nn.LSTM(
             input_size=feature_dim,
             hidden_size=hidden_dim,
-            num_layers=1,
-            batch_first=True
+            num_layers=2,
+            batch_first=True,
+            dropout=0.3
         )
-
+        self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(hidden_dim, num_classes)
 
     def forward(self, x):
@@ -34,9 +35,8 @@ class CNNLSTM(nn.Module):
 
         lstm_out, _ = self.lstm(features)
 
-        # use last timestep
-        final_feature = lstm_out[:, -1]
-
+        final_feature = torch.mean(lstm_out, dim=1)
+        final_feature = self.dropout(final_feature)
         out = self.fc(final_feature)
 
         return out
