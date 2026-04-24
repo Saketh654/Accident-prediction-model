@@ -184,14 +184,14 @@ _transformer_model = _load(
 
 # 5. Two-Stream ResNet
 _twostream_resnet_model = _load(
-    ["two_stream_resnet_best.pth", "two_stream_resnet_final.pth"],
+    "two_stream_resnet_best.pth",
     TwoStreamCNNRes(fusion="concat").to(DEVICE),
     "Two-Stream ResNet"
 )
 
 # 6. Two-Stream Transformer
 _twostream_transformer_model = _load(
-    ["two_stream_transformer_best.pth", "two_stream_transformer_final.pth"],
+     "two_stream_transformer_final.pth",
     TwoStreamTransformer(
         d_model=256, nhead=8, num_layers=4,
         dim_ff=512, fusion="concat",
