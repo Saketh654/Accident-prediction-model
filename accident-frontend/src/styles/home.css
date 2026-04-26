@@ -1,0 +1,221 @@
+.home-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  gap: 48px;
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  max-width: 580px;
+}
+
+.hero-eyebrow {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-bottom: 16px;
+}
+
+.hero-title {
+  font-family: var(--font-disp);
+  font-weight: 800;
+  font-size: clamp(36px, 5vw, 62px);
+  line-height: 1.05;
+  letter-spacing: -2px;
+  margin-bottom: 18px;
+  color: var(--ink);
+}
+
+.hero-title span { color: var(--danger); }
+
+.hero-sub {
+  font-size: 13px;
+  line-height: 1.7;
+  opacity: 0.55;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Drop zone */
+.dropzone-wrap { width: 100%; max-width: 540px }
+
+.dropzone {
+  border: 1.5px dashed rgba(13,13,13,0.25);
+  border-radius: 8px;
+  background: var(--cream);
+  padding: 52px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--trans), background var(--trans), transform var(--trans);
+  position: relative;
+  overflow: hidden;
+}
+
+.dropzone:hover,
+.dropzone.drag-over {
+  border-color: var(--ink);
+  background: #e8e4d8;
+  transform: translateY(-2px);
+}
+
+.dropzone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+}
+
+.dz-icon {
+  font-size: 36px;
+  margin-bottom: 14px;
+  display: block;
+  transition: transform var(--trans);
+}
+
+.dropzone:hover .dz-icon { transform: translateY(-4px); }
+
+.dz-primary {
+  font-family: var(--font-disp);
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.dz-secondary {
+  font-size: 11px;
+  opacity: 0.45;
+  letter-spacing: 0.5px;
+}
+
+/* File chosen row */
+.file-chosen {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+
+.file-chosen-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.file-chosen-size { opacity: 0.4; }
+
+.file-clear {
+  background: none; border: none; cursor: pointer;
+  opacity: 0.35; font-size: 16px;
+  transition: opacity var(--trans);
+  padding: 0 4px;
+}
+
+.file-clear:hover { opacity: 0.8; }
+
+/* Analyze button */
+.btn-analyze {
+  margin-top: 20px;
+  width: 100%;
+  padding: 16px 32px;
+  font-family: var(--font-disp);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--trans), transform var(--trans), opacity var(--trans);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-analyze:hover:not(:disabled) {
+  background: #222;
+  transform: translateY(-1px);
+}
+
+.btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-analyze.loading::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* Progress */
+.progress-wrap {
+  margin-top: 16px;
+  width: 100%;
+  height: 3px;
+  background: var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.5;
+  letter-spacing: 0.5px;
+}
+
+/* Error */
+.error-box {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--danger);
+  background: #fde8e6;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+/* Model selector label */
+.model-select-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.4;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+}
+
+/* Model button */
+.model-btn {
+  padding: 10px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.model-btn-label  { font-weight: 600; }
+.model-btn-desc   { font-size: 9px; opacity: 0.55; margin-top: 2px; }

@@ -34,7 +34,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # ─────────────────────────────────────────────
 model = TwoStreamCNN(base_ch=32, fusion="concat").to(DEVICE)
 model.load_state_dict(
-    torch.load("checkpoints/two_stream_final.pth", map_location=DEVICE)
+    torch.load("checkpoints/two_stream_best.pth", map_location=DEVICE)
 )
 model.eval()
 
