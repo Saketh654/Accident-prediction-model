@@ -44,7 +44,7 @@ dashcam video
       ▼
 [FastAPI Backend — main.py]
       │
-      ├── frame extraction + CLAHE enhancement
+      ├── frame extraction 
       ├── optical flow (Farneback) computed on-the-fly
       ├── sliding window (16 frames, stride 1)
       ├── model inference (one of 6 models)
@@ -242,19 +242,8 @@ Output: `data/excels/final_accident_frames.csv`
 
 > **Note:** This step is labour-intensive. Our team divided the work across members. If you want to skip manual verification and use automated labels only, copy `predicted_accident_frames.csv` to `final_accident_frames.csv` and add a `Validity` column with value `"Verified"` for all rows.
 
-### Step 4 — CLAHE frame enhancement
 
-Applies Contrast Limited Adaptive Histogram Equalization to all frames. This step is required before generating clips.
-
-Create the enhanced frames directory and run the enhancement script. The enhanced frame directories are expected at:
-- `data/frames_enhanced/crash/<video_id>/`
-- `data/frames_enhanced/normal/<video_id>/`
-
-If you do not have a dedicated enhancement script, you can apply CLAHE inline. The preprocessing pipeline assumes these directories exist and will skip videos that do not.
-
-> This step was performed as part of our preprocessing pipeline. If your frame extraction script already applies CLAHE, you can symlink or copy `data/frames/` to `data/frames_enhanced/`.
-
-### Step 5 — Generate optical flow PNGs
+### Step 4 — Generate optical flow PNGs
 
 Computes dense Farneback optical flow between consecutive frames and saves as compressed PNG files. Uses all available CPU cores.
 
@@ -268,7 +257,7 @@ Output:
 
 > This step takes 25–60 minutes depending on your CPU. Progress is shown per video folder.
 
-### Step 6 — Generate spatiotemporal NPZ clips
+### Step 5 — Generate spatiotemporal NPZ clips
 
 Produces 16-frame sliding-window clips in compressed `.npz` format for the 3D CNN, CNN+LSTM, and CNN+Transformer models.
 
@@ -281,7 +270,7 @@ Output:
 - `data/processed/clips_enhanced_npz/normal/*.npz`
 - `data/processed/labels_enhanced_npz.csv`
 
-### Step 7 — Generate two-stream labels CSV
+### Step 6 — Generate two-stream labels CSV
 
 Creates the index CSV for the Two-Stream models (no NPZ files written — frames are loaded on-the-fly during training).
 
@@ -291,7 +280,7 @@ python preprocessing/generate_two_stream_labels.py
 
 Output: `data/processed/labels_two_stream.csv`
 
-### Step 8 — Split dataset into train / val / test
+### Step 7 — Split dataset into train / val / test
 
 Performs a video-level stratified split (70% train, 15% val, 15% test) to prevent data leakage.
 
@@ -506,7 +495,6 @@ The frontend will be available at **http://localhost:5173**
 │   ├── videos/crash/           # Raw crash videos
 │   ├── videos/normal/          # Raw normal videos
 │   ├── frames/                 # Extracted JPEG frames
-│   ├── frames_enhanced/        # CLAHE-enhanced frames
 │   ├── optical_flow_png/       # Farneback flow as PNG
 │   ├── excels/                 # Annotation CSVs
 │   └── processed/              # NPZ clips and label CSVs
