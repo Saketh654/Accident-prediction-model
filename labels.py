@@ -10,10 +10,10 @@ Usage:
 
 import pandas as pd
 
-LABELS_CSV = "data/processed/labels_two_stream_val.csv"
+LABELS_CSV = "data/processed/labels_two_stream.csv"
 
 # ── Set these to match your actual paths ─────────────────────────────────────
-OLD_PREFIX = "L:\Accident Prediction\data\optical_flow_png"        # where it WAS (external SSD)
+OLD_PREFIX = "F:\optical_flow_png"        # where it WAS (external SSD)
 NEW_PREFIX = "D:\College\Accident Prediction\data\optical_flow_png"  # where it IS NOW
 # ─────────────────────────────────────────────────────────────────────────────
 

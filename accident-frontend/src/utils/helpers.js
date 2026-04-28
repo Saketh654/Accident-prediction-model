@@ -49,10 +49,10 @@ export const MODEL_NAMES = {
  * Model selector list — id, label, and short description.
  */
 export const MODEL_LIST = [
-  { id: "3dcnn",                  label: "3D CNN",            desc: "Fastest"    },
-  { id: "cnn_lstm",               label: "CNN + LSTM",        desc: "Balanced"   },
-  { id: "two_stream",             label: "Two-Stream",        desc: "Flow-aware" },
-  { id: "cnn_transformer",        label: "CNN + Transformer", desc: "Attention"  },
-  { id: "two_stream_resnet",      label: "Two-Stream ResNet", desc: "Pretrained" },
-  { id: "two_stream_transformer", label: "Two-Stream Trans.", desc: "Best"       },
+  { id: "3dcnn",                  label: "3D CNN"},
+  { id: "cnn_lstm",               label: "CNN + LSTM"},
+  { id: "two_stream",             label: "Two-Stream"},
+  { id: "cnn_transformer",        label: "CNN + Transformer"},
+  { id: "two_stream_resnet",      label: "Two-Stream ResNet"},
+  { id: "two_stream_transformer", label: "Two-Stream Transformer"},
 ];
