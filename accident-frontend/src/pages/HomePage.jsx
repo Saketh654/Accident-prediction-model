@@ -1,10 +1,3 @@
-/**
- * pages/HomePage.jsx
- * Upload page — drop zone, model selector, analyze button.
- * Props:
- *   onResult  (data) => void  — called with the API response on success
- */
-
 import { useState } from "react";
 import Header        from "../components/Header";
 import Footer        from "../components/Footer";

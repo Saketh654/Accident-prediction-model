@@ -1,9 +1,3 @@
-/**
- * components/Header.jsx
- * Shared top nav bar — used on both Home and Result pages.
- * Props:
- *   onBack  (optional) — if provided, shows a "← New Analysis" button
- */
 
 import "../styles/layout.css";
 

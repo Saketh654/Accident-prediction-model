@@ -1,11 +1,3 @@
-/**
- * components/RiskChart.jsx
- * Chart.js line chart of risk scores over time.
- * Props:
- *   scores  number[]   — array of 0–1 risk values
- *   fps     number     — frames per second (default 10)
- */
-
 import { useRef, useEffect } from "react";
 import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);

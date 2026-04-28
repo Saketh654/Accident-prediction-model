@@ -1,11 +1,3 @@
-/**
- * components/Footer.jsx
- * Shared bottom bar.
- * Props:
- *   left  string — left note text
- *   right string — right note text
- */
-
 import "../styles/layout.css";
 
 export default function Footer({ left, right }) {

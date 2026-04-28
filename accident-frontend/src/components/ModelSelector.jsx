@@ -1,11 +1,3 @@
-/**
- * components/ModelSelector.jsx
- * 3×2 grid of model toggle buttons.
- * Props:
- *   selected  string          — currently selected model id
- *   onChange  (id) => void    — called when user clicks a model
- *   disabled  boolean         — disables all buttons when loading
- */
 
 import { MODEL_LIST } from "../utils/helpers";
 import "../styles/home.css";

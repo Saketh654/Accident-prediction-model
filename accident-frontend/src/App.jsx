@@ -1,9 +1,3 @@
-/**
- * App.jsx — root component
- * Only responsible for routing between HomePage and ResultPage.
- * All logic lives in pages/, components/, hooks/, and utils/.
- */
-
 import { useState } from "react";
 import HomePage   from "./pages/HomePage";
 import ResultPage from "./pages/ResultPage";

@@ -1,22 +1,3 @@
-"""
-two_stream_dataset.py
-
-On-the-fly PyTorch Dataset for the Two-Stream network.
-Reads directly from:
-    - Enhanced RGB frames  (frames_enhanced/)
-    - PNG optical flow     (optical_flow_png/)
-
-No pre-built NPZ clips needed. Each __getitem__ call:
-    1. Reads CLIP_LENGTH RGB frames from disk
-    2. Reads CLIP_LENGTH PNG flow files from disk
-    3. Decodes, normalizes, and returns tensors
-
-Returns per sample:
-    rgb  : (3, T, H, W)  float32  spatial stream input
-    flow : (2, T, H, W)  float32  temporal stream input
-    label: scalar float32
-"""
-
 import os
 import cv2
 import numpy as np

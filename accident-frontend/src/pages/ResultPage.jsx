@@ -1,12 +1,4 @@
-/**
- * pages/ResultPage.jsx
- * Shows inference results: stat cards, video player, risk chart, analysis text.
- * Props:
- *   data    object  — API response { video, risk_scores, model_used, summary }
- *   onBack  ()=>void
- */
-
-import Header    from "../components/Header";
+simport Header    from "../components/Header";
 import Footer    from "../components/Footer";
 import RiskChart from "../components/RiskChart";
 import { riskLevel, computeSummary, MODEL_NAMES } from "../utils/helpers";

@@ -1,11 +1,3 @@
-/**
- * components/DropZone.jsx
- * Drag-and-drop + click-to-browse file input.
- * Props:
- *   onFile   (File) => void   — called when a valid video file is selected
- *   disabled boolean          — disables interaction when loading
- */
-
 import { useRef, useCallback } from "react";
 import "../styles/home.css";
 

@@ -1,9 +1,3 @@
-/**
- * hooks/useAnalyze.js
- * Encapsulates all upload + inference API logic.
- * Returns state and the analyze() trigger function.
- */
-
 import { useState } from "react";
 import axios from "axios";
 
