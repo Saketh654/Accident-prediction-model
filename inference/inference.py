@@ -84,6 +84,29 @@ TWO_STREAM_MODELS = {
     "two_stream_transformer",
 }
 
+# ── Checkpoint mapping ────────────────────────────────────────────────────────
+# Maps each model name to its default checkpoint path (relative to project root)
+CHECKPOINT_MAP = {
+    "accident_3dcnn":         "checkpoints/accident_model.pth",
+    "cnn_lstm":               "checkpoints/cnn_lstm_best.pth",
+    "cnn_transformer":        "checkpoints/cnn_transformer_best.pth",
+    "two_stream_cnn":         "checkpoints/two_stream_best.pth",
+    "two_stream_resnet":      "checkpoints/two_stream_resnet_best.pth",
+    "two_stream_transformer": "checkpoints/two_stream_transformer_final.pth",
+}
+
+
+def _resolve_checkpoint(model_name: str) -> Optional[str]:
+    """
+    Return the default checkpoint path for *model_name*, resolved relative to
+    the project root.  Returns None if the file does not exist on disk.
+    """
+    rel_path = CHECKPOINT_MAP.get(model_name)
+    if rel_path is None:
+        return None
+    abs_path = os.path.join(ROOT, rel_path)
+    return abs_path if os.path.isfile(abs_path) else rel_path   # always return the path string; build_model will warn if missing
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Model factory
@@ -375,11 +398,12 @@ def run_inference(args) -> None:
     device     = "cuda" if torch.cuda.is_available() else "cpu"
     model_name = args.model.lower()
     print(f"\n{'='*60}")
-    print(f"  Model    : {model_name}")
-    print(f"  Device   : {device}")
-    print(f"  Source   : {args.source}")
-    print(f"  Clip len : {args.clip_len} frames")
-    print(f"  Threshold: {args.threshold}")
+    print(f"  Model      : {model_name}")
+    print(f"  Checkpoint : {args.checkpoint or '(none)'}")
+    print(f"  Device     : {device}")
+    print(f"  Source     : {args.source}")
+    print(f"  Clip len   : {args.clip_len} frames")
+    print(f"  Threshold  : {args.threshold}")
     print(f"{'='*60}\n")
 
     model          = build_model(model_name, args.checkpoint, device)
@@ -510,7 +534,6 @@ def _prompt(prompt_text: str, default: str = "") -> str:
     return value if value else default
 
 
-
 def interactive_menu():
     """Collect model, source, and output path via an interactive terminal menu."""
 
@@ -523,7 +546,7 @@ def interactive_menu():
     # ── 1. Model selection ────────────────────────────────────────────────────
     print("\n  Available models:")
     for i, m in enumerate(AVAILABLE_MODELS, 1):
-        tag = "two-stream" if m in TWO_STREAM_MODELS else "single-stream"
+        tag  = "two-stream" if m in TWO_STREAM_MODELS else "single-stream"
         print(f"    {i}.  {m:<35} [{tag}]")
 
     default_model_idx = AVAILABLE_MODELS.index("two_stream_transformer") + 1
@@ -538,10 +561,13 @@ def interactive_menu():
         else:
             print(f"  ✗  Invalid choice. Enter 1–{len(AVAILABLE_MODELS)} or a model name.")
 
-    # ── 2. Source ─────────────────────────────────────────────────────────────
+    # ── 2. Auto-resolve checkpoint ────────────────────────────────────────────
+    checkpoint = _resolve_checkpoint(model_name) 
+    
+    # ── 3. Source ─────────────────────────────────────────────────────────────
     source = _prompt("\n  Source (video path, frame dir, or webcam index)", "0")
 
-    # ── 3. Output ─────────────────────────────────────────────────────────────
+    # ── 4. Output ─────────────────────────────────────────────────────────────
     raw_out = _prompt("\n  Output video path (.mp4)  [leave blank to skip saving]", "")
     output  = raw_out if raw_out else None
 
@@ -549,11 +575,11 @@ def interactive_menu():
     import types
     args            = types.SimpleNamespace()
     args.model      = model_name
-    args.checkpoint = None
+    args.checkpoint = checkpoint
     args.source     = source
     args.output     = output
     args.clip_len   = 16
-    args.threshold  = 0.5
+    args.threshold  = 0.7
     args.min_area   = 800
     args.no_display = False
     return args
